@@ -87,10 +87,21 @@ void PeUtil::GetExportTable()
 	char* dllName = (char*)(RvaToFoa(pExportDirectory->Name) + buffer);
 	printf("DLL Name: %s\n", dllName);
 	DWORD* funaddr = (DWORD*)(RvaToFoa(pExportDirectory->AddressOfFunctions) + buffer);
+	DWORD* funname = (DWORD*)(RvaToFoa(pExportDirectory->AddressOfNames) + buffer);
+	WORD* funord = (WORD*)(RvaToFoa(pExportDirectory->AddressOfNameOrdinals) + buffer);
 	for (int i = 0; i < pExportDirectory->NumberOfFunctions; i++)
 	{
 		//是要AddressOfFunctions每一项对应的值
 		printf("Function Address: %x\n", *funaddr);
+		// AddressOfNames 和 AddressOfNameOrdinals 的长度是一样的，都是 NumberOfNames。
+		for (int j = 0; j < pExportDirectory->NumberOfNames; j++)
+		{
+			if (funord[j] == i) {
+				char* name = RvaToFoa(funname[j])+buffer;
+				printf("Function Name: %s\n", name);
+				break;
+			}
+		}
 		funaddr++;
 
 
