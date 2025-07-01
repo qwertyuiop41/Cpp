@@ -1,5 +1,0 @@
-LIBRARY "mydll"
-EXPORTS
-sum @ 2
-div @ 3 NONAME
-fun1 @ 7
