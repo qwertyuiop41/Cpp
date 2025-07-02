@@ -1,0 +1,6 @@
+LIBRARY "mydll3"
+EXPORTS
+sum1 @ 1
+test11 @ 2 NONAME
+test22 @ 3 NONAME
+fun2 @ 4 NONAME

@@ -108,6 +108,38 @@ void PeUtil::GetExportTable()
 	}
 }
 
+void PeUtil::GetImportTable()
+{
+	IMAGE_DATA_DIRECTORY dictionary = pOptionalHeader->DataDirectory[1];
+	PIMAGE_IMPORT_DESCRIPTOR pImportDictionary = (PIMAGE_IMPORT_DESCRIPTOR)(RvaToFoa(dictionary.VirtualAddress) + buffer);
+	while (pImportDictionary->OriginalFirstThunk)
+	{
+		char* dllName = (char*)(RvaToFoa(pImportDictionary->Name) + buffer);
+		printf("DLL Name: %s\n", dllName);
+		PIMAGE_THUNK_DATA pThunkData = (PIMAGE_THUNK_DATA)(RvaToFoa(pImportDictionary->OriginalFirstThunk) + buffer);
+		//union中任一字段都可以进行判断
+		while (pThunkData->u1.AddressOfData)
+		{
+			//如果Ordinal最高位为1，则是按序号导入，剩下的31位代表序号
+			if ((pThunkData->u1.Ordinal & 0x80000000) == 0x80000000)
+			{
+				printf("Import by Ordinal: %d\n", pThunkData->u1.Ordinal & 0x7FFFFFFF);
+			}
+			else
+			{
+				PIMAGE_IMPORT_BY_NAME pImportByName = (PIMAGE_IMPORT_BY_NAME)(RvaToFoa(pThunkData->u1.AddressOfData) + buffer);
+				printf("Import by Name: %s\n", pImportByName->Name);
+			}
+			pThunkData++;
+
+		}
+
+
+		//导入表通常不止一个且以数组形式堆叠
+		pImportDictionary++;
+	}
+}
+
 DWORD PeUtil::RvaToFoa(DWORD rva)
 {
 	PIMAGE_SECTION_HEADER pSectionHeader = IMAGE_FIRST_SECTION(pNtHeaders);

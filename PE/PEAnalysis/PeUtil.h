@@ -10,6 +10,7 @@ public:
 	BOOL InitPeInfo();
 	void PrintSectionHeaders();
 	void GetExportTable();
+	void GetImportTable();
 private:
 	char* buffer;
 	DWORD fileSize;

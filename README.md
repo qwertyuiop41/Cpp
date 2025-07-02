@@ -12,6 +12,6 @@ Sword2MFC 外挂窗口编写：
 
 PE/PE 解析PE文件headers
 
-PE/PE 解析PE文件导出表（导入表/重定位表的解析还未实现）
+PE/PE 解析PE文件导出表和导入表
 
 Vulnerability 通过修改password.txt+栈溢出使进程返回“密码正确”
