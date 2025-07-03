@@ -14,4 +14,5 @@ PE/PE 解析PE文件headers
 
 PE/PE 解析PE文件导出表和导入表
 
-Vulnerability 通过修改password.txt+栈溢出使进程返回“密码正确”
+Vulnerability 通过修改password.txt+栈溢出使进程返回指定内容 
+通过jmp esp跳板调用password.txt中注入的shellcode（调用MessageBoxA输入自定义内容，最后调用exitprocess退出）
