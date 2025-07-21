@@ -121,8 +121,7 @@ BOOL CPeUtil::InsertSection(const char* sectionName, DWORD codeSize, char* codeb
 	//设置VirtualAddress
 	pNewSectionHeader->VirtualAddress = pLastSection->VirtualAddress + GetAlignmentSize(pLastSection->Misc.VirtualSize,pOptionalHeader->SectionAlignment);
 	//设置PointerToRawData
-	//因为SizeOfRawData是区段在文件中对齐后大小，所以不需要GetAlignmentSize
-	pNewSectionHeader->PointerToRawData = pLastSection->PointerToRawData + pLastSection->SizeOfRawData;
+	pNewSectionHeader->PointerToRawData = pLastSection->PointerToRawData + GetAlignmentSize(pLastSection->SizeOfRawData,pOptionalHeader->FileAlignment);
 	//设置区段属性
 	pNewSectionHeader->Characteristics = dwCharacteristic;
 
@@ -224,18 +223,21 @@ BOOL CPeUtil::RepairReloc(DWORD imageBase)
 			if ((0x3000 & *offset) == 0x3000) {
 				//VirtualAdress+Word数据低12位=真正的RVA
 				WORD offset2= *offset & 0x0FFF;
-				DWORD* relocRva = (DWORD*)(offset2 + pBaseRelocationDll->VirtualAddress);
+				WORD relocRva = (offset2 + pBaseRelocationDll->VirtualAddress);
+				DWORD* relocAddr = (DWORD*)(relocRva+imageBase);
 				PIMAGE_SECTION_HEADER lastSection = GetLastSection();
 				DWORD newFileSection = (DWORD)(lastSection->PointerToRawData + buffer);
 				DWORD newSectionAddr = (DWORD)(lastSection->VirtualAddress + pOptionalHeader->ImageBase);
 
-				DWORD destFileRva = (DWORD)(newFileSection + relocRva - pSectionHeaderDll->VirtualAddress);
-				DWORD destSectionRva= (DWORD)(newSectionAddr + relocRva - pSectionHeaderDll->VirtualAddress);
-
+				// 通过在区段中偏移地址相同计算destAddr
+				DWORD destAddr = newFileSection + (DWORD)relocAddr - (DWORD)(pSectionHeaderDll->VirtualAddress+imageBase);
+				// destAddr是要修改的地址在新文件中的位置
+				// 然后对destAddr地址中存储的值进行 relocation 修正，由注入进来的file对齐，变成运行过程的内存对齐
+				*(DWORD*)destAddr = newSectionAddr + (*(DWORD*)destAddr - imageBase) - pSectionHeaderDll->VirtualAddress;
 			}
 			start += 2;
 		}
-		pBaseRelocationDll = (PIMAGE_BASE_RELOCATION)(pBaseRelocationDll + pBaseRelocationDll->SizeOfBlock);
+		pBaseRelocationDll = (PIMAGE_BASE_RELOCATION)((DWORD)pBaseRelocationDll + pBaseRelocationDll->SizeOfBlock);
 	}
 
 
