@@ -41,7 +41,7 @@ BOOL PeUtil::LoadFile(const char* path)
 		return TRUE;
 	}
 	CloseHandle(hfile);
-	return FALSE;
+	return FALSE; 
 }
 
 BOOL PeUtil::InitPeInfo()
@@ -103,8 +103,6 @@ void PeUtil::GetExportTable()
 			}
 		}
 		funaddr++;
-
-
 	}
 }
 
@@ -148,7 +146,7 @@ DWORD PeUtil::RvaToFoa(DWORD rva)
 		// 首先判断rva是否在当前区段的范围内
 		if (rva>pSectionHeader->VirtualAddress&&rva< pSectionHeader->VirtualAddress+pSectionHeader->Misc.VirtualSize)
 		{
-			//数据地址FOA=区段首地址FOV+数据地址RVA-区段首地址RVA
+			//数据地址FOA=区段首地址FOA+数据地址RVA-区段首地址RVA
 			return pSectionHeader->PointerToRawData + (rva - pSectionHeader->VirtualAddress);
 		}
 		pSectionHeader++;
