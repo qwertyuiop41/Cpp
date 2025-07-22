@@ -116,7 +116,7 @@ BOOL DecodeSections() {
 	//1. 获取模块基址-》GetModuleHandleA，传0代表获得当前pe的模块基址
 	HMODULE hModule = g_MyGetModuleHandleA(0);
 	PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER)hModule;
-	PIMAGE_NT_HEADERS pNtHeaders = (PIMAGE_NT_HEADERS)(hModule + pDosHeader->e_lfanew);
+	PIMAGE_NT_HEADERS pNtHeaders = (PIMAGE_NT_HEADERS)((DWORD)hModule + pDosHeader->e_lfanew);
 	PIMAGE_OPTIONAL_HEADER pOptionalHeader = &pNtHeaders->OptionalHeader;
 	PIMAGE_SECTION_HEADER pSectionHeader = IMAGE_FIRST_SECTION(pNtHeaders);
 	char* pData = (char*)((DWORD)hModule + pSectionHeader->VirtualAddress);

@@ -101,7 +101,7 @@ BOOL CPeUtil::InsertSection(const char* sectionName, DWORD codeSize, char* codeb
 	//获得对齐后的PE文件大小
 	DWORD newFileSize = GetAlignmentSize(fileSize + codeSize,pOptionalHeader->FileAlignment);
 	//创建新的缓冲区存放PE文件
-	char* newbuffer = new char[newFileSize];
+	char* newbuffer = new char[newFileSize] {};
 	memcpy_s(newbuffer, newFileSize, buffer, fileSize);
 	fileSize = newFileSize;
 	delete[] buffer;
@@ -109,30 +109,34 @@ BOOL CPeUtil::InsertSection(const char* sectionName, DWORD codeSize, char* codeb
 	InitFileInfo();
 	//给新增区段添加区段头
 	PIMAGE_SECTION_HEADER pLastSection = GetLastSection();
-	PIMAGE_SECTION_HEADER pNewSectionHeader = pLastSection +1;
+	//PIMAGE_SECTION_HEADER pNewSectionHeader = pLastSection +1;
+	pLastSection++;
 	
 	//给新区段头设置属性
 	//设置内存大小
-	pNewSectionHeader->Misc.VirtualSize = GetAlignmentSize(codeSize, pOptionalHeader->SectionAlignment);
+	pLastSection->Misc.VirtualSize = GetAlignmentSize(codeSize, pOptionalHeader->SectionAlignment);
 	//设置文件大小
-	pNewSectionHeader->SizeOfRawData = GetAlignmentSize(codeSize, pOptionalHeader->FileAlignment);
+	pLastSection->SizeOfRawData = GetAlignmentSize(codeSize, pOptionalHeader->FileAlignment);
 	//设置区段名称
-	strcpy_s((char*)pNewSectionHeader->Name, 8, sectionName);
+	strcpy_s((char*)pLastSection->Name, 8, sectionName);
 	//设置VirtualAddress
-	pNewSectionHeader->VirtualAddress = pLastSection->VirtualAddress + GetAlignmentSize(pLastSection->Misc.VirtualSize,pOptionalHeader->SectionAlignment);
+	PIMAGE_SECTION_HEADER pLastSection2 = GetLastSection();
+	pLastSection->VirtualAddress = pLastSection2->VirtualAddress + GetAlignmentSize(pLastSection2->Misc.VirtualSize,pOptionalHeader->SectionAlignment);
 	//设置PointerToRawData
-	pNewSectionHeader->PointerToRawData = pLastSection->PointerToRawData + GetAlignmentSize(pLastSection->SizeOfRawData,pOptionalHeader->FileAlignment);
+	
+	pLastSection->PointerToRawData = pLastSection2->PointerToRawData + GetAlignmentSize(pLastSection2->SizeOfRawData,pOptionalHeader->FileAlignment);
 	//设置区段属性
-	pNewSectionHeader->Characteristics = dwCharacteristic;
+	pLastSection->Characteristics = dwCharacteristic;
 
 	//修改numberOfSection
 	pFileHeader->NumberOfSections++;
 	//修改sizeofimage
-	pOptionalHeader->SizeOfImage += pNewSectionHeader->Misc.VirtualSize;
+	pOptionalHeader->SizeOfImage += GetAlignmentSize(codeSize, pOptionalHeader->SectionAlignment);
 
 	//将壳代码放到新的区段
-	char* fileSectionAddr = GetLastSection()->PointerToRawData + buffer;
+	char* fileSectionAddr = pLastSection->PointerToRawData + buffer;
 	memcpy(fileSectionAddr, codebuff, codeSize);
+	//memcpy_s(newbuffer, newFileSize, buffer, fileSize);
 	MessageBoxA(NULL, "注入dll文件到新section成功", "提示", MB_OK);
 
 	return TRUE;
@@ -213,7 +217,7 @@ BOOL CPeUtil::RepairReloc(DWORD imageBase)
 	IMAGE_DATA_DIRECTORY dataDirectoryDll = (IMAGE_DATA_DIRECTORY)(pOptionalHeaderDll->DataDirectory[5]);
 	PIMAGE_BASE_RELOCATION pBaseRelocationDll = (PIMAGE_BASE_RELOCATION)(dataDirectoryDll.VirtualAddress + imageBase);
 	PIMAGE_SECTION_HEADER pSectionHeaderDll = IMAGE_FIRST_SECTION(pNtHeaderDll);
-	while (pBaseRelocationDll->SizeOfBlock!=0)
+	while (pBaseRelocationDll->SizeOfBlock>=8)
 	{
 		char* start = (char*)pBaseRelocationDll;
 		DWORD num = (pBaseRelocationDll->SizeOfBlock - 8) / 2;
@@ -222,8 +226,7 @@ BOOL CPeUtil::RepairReloc(DWORD imageBase)
 			WORD* offset = (WORD*)start;
 			if ((0x3000 & *offset) == 0x3000) {
 				//VirtualAdress+Word数据低12位=真正的RVA
-				WORD offset2= *offset & 0x0FFF;
-				WORD relocRva = (offset2 + pBaseRelocationDll->VirtualAddress);
+				WORD relocRva = (*offset & 0x0FFF + pBaseRelocationDll->VirtualAddress);
 				DWORD* relocAddr = (DWORD*)(relocRva+imageBase);
 				PIMAGE_SECTION_HEADER lastSection = GetLastSection();
 				DWORD newFileSection = (DWORD)(lastSection->PointerToRawData + buffer);
