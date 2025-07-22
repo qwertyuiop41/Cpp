@@ -21,7 +21,7 @@ int main() {
 	// GetProcAddress 的语义是返回符号地址
 	PPACKINFO pPackInfo = (PPACKINFO)GetProcAddress(hModule, "g_PackInfo");
 	pPackInfo->oldOEP = peUtil.GetOldOEP();
-	
+	peUtil.GetImportTable();
 	PIMAGE_DOS_HEADER pDosHeaderdll = (PIMAGE_DOS_HEADER)hModule;
 	//要把hModule改成(DWORD)hModule，不然会报错
 	// 直接(HMODULE + DWORD) 会导致编译器认为你要以 sizeof(HMODULE) 为单位进行指针偏移，而不是字节偏移！
@@ -34,7 +34,7 @@ int main() {
 	DWORD OEPRVA = pPackInfo->newOEP - (DWORD)hModule;
 	DWORD offset = OEPRVA - pSectionHeaderdll->VirtualAddress;
 	BOOL bSet = peUtil.SetOEP(offset);
-	peUtil.SaveFile("customPack.exe");
+	peUtil.SaveFile("customPackImport.exe");
 	return 0;
 }
 

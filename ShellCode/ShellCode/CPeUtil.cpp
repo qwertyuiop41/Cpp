@@ -17,6 +17,22 @@ DWORD CPeUtil::RvaToFoa(DWORD rva)
 	return 0;
 }
 
+DWORD CPeUtil::FoaToRva(DWORD foa)
+{
+	PIMAGE_SECTION_HEADER pSectionHeader = IMAGE_FIRST_SECTION(pNtHeaders);
+	for (int i = 0; i < pFileHeader->NumberOfSections; i++)
+	{
+		// 首先判断rva是否在当前区段的范围内
+		if (foa > pSectionHeader->PointerToRawData && foa < pSectionHeader->PointerToRawData + pSectionHeader->SizeOfRawData)
+		{
+			//数据地址FOA=区段首地址FOA+数据地址RVA-区段首地址RVA
+			return pSectionHeader->VirtualAddress + (foa - pSectionHeader->PointerToRawData);
+		}
+		pSectionHeader++;
+	}
+	return 0;
+}
+
 CPeUtil::CPeUtil()
 {
 	buffer = NULL;
@@ -25,6 +41,8 @@ CPeUtil::CPeUtil()
 	pNtHeaders = NULL;
 	pFileHeader = NULL;
 	pOptionalHeader = NULL;
+	importTableSize = 0;
+	pNewImportDescriptor = NULL;
 }
 
 CPeUtil::~CPeUtil()
@@ -97,8 +115,12 @@ BOOL CPeUtil::InsertSection(const char* sectionName, DWORD codeSize, char* codeb
 	} 
 
 	//---------------------------------------------------
+	//---------------------------------------------------
+	//---------------------------------------------------
 	
 	//获得对齐后的PE文件大小
+	DWORD originalCodeSize = codeSize;
+	codeSize += importTableSize;
 	DWORD newFileSize = GetAlignmentSize(fileSize + codeSize,pOptionalHeader->FileAlignment);
 	//创建新的缓冲区存放PE文件
 	char* newbuffer = new char[newFileSize] {};
@@ -136,7 +158,16 @@ BOOL CPeUtil::InsertSection(const char* sectionName, DWORD codeSize, char* codeb
 	//将壳代码放到新的区段
 	char* fileSectionAddr = pLastSection->PointerToRawData + buffer;
 	memcpy(fileSectionAddr, codebuff, codeSize);
-	//memcpy_s(newbuffer, newFileSize, buffer, fileSize);
+
+	//将新导入表放到新的区段
+	fileSectionAddr += originalCodeSize;
+	memcpy(fileSectionAddr, pNewImportDescriptor, importTableSize);
+
+	//导入表位置指向新区段
+	PIMAGE_DATA_DIRECTORY pImportDirectory = &pOptionalHeader->DataDirectory[1];
+	pImportDirectory->VirtualAddress = FoaToRva((DWORD)(fileSectionAddr-buffer));
+
+
 	MessageBoxA(NULL, "注入dll文件到新section成功", "提示", MB_OK);
 
 	return TRUE;
@@ -245,6 +276,28 @@ BOOL CPeUtil::RepairReloc(DWORD imageBase)
 
 
 	return 0;
+}
+
+BOOL CPeUtil::GetImportTable()
+{
+	IMAGE_DATA_DIRECTORY dictionary = pOptionalHeader->DataDirectory[1];
+	PIMAGE_IMPORT_DESCRIPTOR pImportDictionary = (PIMAGE_IMPORT_DESCRIPTOR)(RvaToFoa(dictionary.VirtualAddress) + buffer);
+	PIMAGE_IMPORT_DESCRIPTOR pFirstDictionary = (PIMAGE_IMPORT_DESCRIPTOR)(RvaToFoa(dictionary.VirtualAddress) + buffer);
+
+	DWORD tableLen = 0;
+
+	while (pImportDictionary->Name!=NULL)
+	{
+		tableLen++;
+		pImportDictionary++;
+	}
+	// 多留一个位置做结束的0
+	tableLen++;
+	importTableSize = tableLen * sizeof(IMAGE_IMPORT_DESCRIPTOR);
+	pNewImportDescriptor = new IMAGE_IMPORT_DESCRIPTOR[tableLen]{};
+	memcpy(pNewImportDescriptor, pFirstDictionary, (tableLen - 1) * sizeof(IMAGE_IMPORT_DESCRIPTOR));
+	return TRUE;
+
 }
 
 
