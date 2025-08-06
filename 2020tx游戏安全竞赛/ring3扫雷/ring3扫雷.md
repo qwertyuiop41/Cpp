@@ -279,7 +279,8 @@ winmine.exe是一个扫雷游戏程序，winmine.dmp是该程序的一份进程d
         一键游戏作弊地址：6E221820
         
         偏移：1820
-    - 地雷分布
+      
+    - 地雷分布（显示所有地雷的位置）
         
         继续查找CheatTools.dll .text中所有包含100xxxxh的命令
         
