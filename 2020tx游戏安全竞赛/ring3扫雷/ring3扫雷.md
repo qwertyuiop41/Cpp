@@ -279,3 +279,62 @@ winmine.exe是一个扫雷游戏程序，winmine.dmp是该程序的一份进程d
         一键游戏作弊地址：6E221820
         
         偏移：1820
+    - 地雷分布
+        
+        继续查找CheatTools.dll .text中所有包含100xxxxh的命令
+        
+        发现sub_6E221AC0应该是发现地雷分布的方法，两个for循环遍历棋盘，如果是雷则显示位置
+        
+        ```cpp
+        void __thiscall **sub_6E221AC0**(CWnd *this)
+        {
+         ...
+          v30 = this;
+          v32 = MEMORY[0x1005334];
+          v29 = MEMORY[0x1005338];
+          v1 = MEMORY[0x1005338] * MEMORY[0x1005334] + 16798828;
+          v2 = (void ***)operator new(4u);
+          if ( v2 )
+            *v2 = &v35;
+          else
+            v2 = 0;
+          v35 = v2;
+          v3 = 0;
+          v4 = 0;
+          v5 = 0;
+          v36 = 0;
+          v37 = 0;
+          v38 = 0;
+          v6 = 16798528;
+          v43 = 1;
+          for ( i = (char *)16798528; v6 < v1; i = (char *)v6 )
+          {
+            if ( *(_BYTE *)v6 == 0x8F )  //如果是地雷
+            {
+              ...
+            }
+            ++v6;
+          }
+          ...
+          **for ( k = 1; k <= v29; ++k )
+          {
+            v21 = v32;
+            for ( l = 1; l <= v21; ++l )
+            {
+              if ( (unsigned __int8)sub_6E221750(v39, k, l) == 1 )   //如果是雷就显示
+              {
+                sub_6E223040((int)&String, (char *)&byte_6E24EFDC, k);
+                sub_6E222080("\n", 1u);
+                sub_6E222080(String, *((_DWORD *)String - 3));
+              }
+            }
+          }**
+          ...
+        }
+        ```
+        
+        ImageBase：6E220000
+        
+        地雷分布作弊地址：6E221AC0
+        
+        偏移：1AC0
