@@ -86,13 +86,13 @@ winmine.exe是一个扫雷游戏程序，winmine.dmp是该程序的一份进程d
     相互验证了一下，两种方法得到的CheatTools.dll是一样的
     
 
-修改cheattools.dll一些属性（pointertorawdata）
+    修改cheattools.dll一些属性（pointertorawdata）
+    
+    修改后
+    
+    ![image.png](image%202.png)
 
-修改后
-
-![image.png](image%202.png)
-
-1. 并分析它所包含的4个作弊功能，给出实现作弊功能的函数的偏移，并说明其作弊功能是什么。（4分）
+2. 并分析它所包含的4个作弊功能，给出实现作弊功能的函数的偏移，并说明其作弊功能是什么。（4分）
     
     IDA分析CheatTools.dll发现有大量MFC函数，所以用resource hacker分析MFC部分，发现作弊的Dialog及对应的4个作弊功能：暂停时间，遇雷不爆，一键游戏，地雷分布
     
